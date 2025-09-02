@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿using NUnit.Framework;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class InventoryView : UiView
@@ -16,6 +20,9 @@ public class InventoryView : UiView
     private GameObject _currentSelectedGameObject;
     private SoulInformation _currentSoulInformation;
 
+    [SerializeField]
+    private List<SoulInformation> soulsList = new List<SoulInformation>();
+
     public override void Awake()
     {
         base.Awake();
@@ -25,13 +32,21 @@ public class InventoryView : UiView
 
     private void InitializeInventoryItems()
     {
+        soulsList.Clear();
+        soulsList.TrimExcess();
+
         for (int i = 0, j = SoulController.Instance.Souls.Count; i < j; i++)
         {
             SoulInformation newSoul = Instantiate(SoulItemPlaceHolder.gameObject, _contentParent).GetComponent<SoulInformation>();
             newSoul.SetSoulItem(SoulController.Instance.Souls[i], () => SoulItem_OnClick(newSoul));
+            soulsList.Add(newSoul);
         }
 
         SoulItemPlaceHolder.gameObject.SetActive(false);
+
+        firstSelected = soulsList.First().gameObject;
+
+        SetupGridNavigation();
     }
 
     private void OnEnable()
@@ -55,6 +70,21 @@ public class InventoryView : UiView
         _currentSoulInformation = soulInformation;
         _currentSelectedGameObject = soulInformation.gameObject;
         SetupSoulInformation(soulInformation.soulItem);
+        SelectActionButton(soulInformation);
+
+    }
+
+    private void SelectActionButton(SoulInformation soulInformation)
+    {
+        if (soulInformation.soulItem.CanBeUsed)
+        {
+            EventSystem.current.SetSelectedGameObject(UseButton.gameObject);
+        }
+        else if (soulInformation.soulItem.CanBeDestroyed)
+        {
+            EventSystem.current.SetSelectedGameObject(DestroyButton.gameObject);
+        }
+
     }
 
     private void SetupSoulInformation(SoulItem soulItem)
@@ -64,8 +94,45 @@ public class InventoryView : UiView
         Avatar.sprite = soulItem.Avatar;
         SetupUseButton(soulItem.CanBeUsed);
         SetupDestroyButton(soulItem.CanBeDestroyed);
+        SetupActionButtonsNavigation(soulItem);
     }
+    private void SetupActionButtonsNavigation(SoulItem soulItem)
+    {
 
+        bool useActive = soulItem.CanBeUsed;
+        bool destroyActive = soulItem.CanBeDestroyed;
+
+
+        Navigation useNav = new Navigation { mode = Navigation.Mode.None };
+        Navigation destroyNav = new Navigation { mode = Navigation.Mode.None };
+
+        if (useActive && destroyActive)
+        {
+
+            useNav = new Navigation
+            {
+                mode = Navigation.Mode.Explicit,
+                selectOnRight = DestroyButton
+            };
+
+            destroyNav = new Navigation
+            {
+                mode = Navigation.Mode.Explicit,
+                selectOnLeft = UseButton
+            };
+        }
+        else if (useActive && !destroyActive)
+        {
+            useNav = new Navigation { mode = Navigation.Mode.None };
+        }
+        else if (!useActive && destroyActive)
+        {
+            destroyNav = new Navigation { mode = Navigation.Mode.None };
+        }
+        UseButton.navigation = useNav;
+        DestroyButton.navigation = destroyNav;
+
+    }
     private void SelectElement(int index)
     {
 
@@ -103,6 +170,14 @@ public class InventoryView : UiView
         if (active)
         {
             bool isInCorrectLocalization = GameControlller.Instance.IsCurrentLocalization(_currentSoulInformation.soulItem.UsableInLocalization);
+
+            if (!isInCorrectLocalization)
+            {
+                UseButton.interactable = false;
+                return;
+            }
+
+
             PopUpInformation popUpInfo = new PopUpInformation
             {
                 DisableOnConfirm = isInCorrectLocalization,
@@ -112,8 +187,43 @@ public class InventoryView : UiView
                 Confirm_OnClick = () => UseCurrentSoul(isInCorrectLocalization)
             };
             UseButton.onClick.AddListener(() => GUIController.Instance.ShowPopUpMessage(popUpInfo));
+            UseButton.interactable = true;
         }
         UseButton.gameObject.SetActive(active);
+
+
+    }
+    private void SetupGridNavigation()
+    {
+        int columns = 3;
+
+        for (int i = 0; i < soulsList.Count; i++)
+        {
+            Button button = soulsList[i].GetComponent<Button>();
+            if (button == null) continue;
+
+            Navigation nav = new Navigation
+            {
+                mode = Navigation.Mode.Explicit
+            };
+
+            int rowIndex = i / columns;
+            int columnIndex = i % columns;
+
+            if (columnIndex > 0)
+                nav.selectOnLeft = soulsList[i - 1].GetComponent<Button>();
+
+            if (columnIndex < columns - 1 && i + 1 < soulsList.Count)
+                nav.selectOnRight = soulsList[i + 1].GetComponent<Button>();
+
+            if (rowIndex > 0)
+                nav.selectOnUp = soulsList[i - columns].GetComponent<Button>();
+
+            if (i + columns < soulsList.Count)
+                nav.selectOnDown = soulsList[i + columns].GetComponent<Button>();
+
+            button.navigation = nav;
+        }
     }
 
     private void SetupDestroyButton(bool active)

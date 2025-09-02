@@ -1625,6 +1625,7 @@ MonoBehaviour:
   UnpauseOnClose: 0
   CloseOnNewView: 1
   BackButon: {fileID: 4480285739139039147}
+  firstSelected: {fileID: 0}
 --- !u!1 &899995588459660306
 GameObject:
   m_ObjectHideFlags: 0
@@ -2680,6 +2681,7 @@ MonoBehaviour:
   UnpauseOnClose: 0
   CloseOnNewView: 1
   BackButon: {fileID: 5748357057442252130}
+  firstSelected: {fileID: 0}
 --- !u!1 &1941993581914623375
 GameObject:
   m_ObjectHideFlags: 0
@@ -4746,6 +4748,7 @@ MonoBehaviour:
   UnpauseOnClose: 0
   CloseOnNewView: 1
   BackButon: {fileID: 9038020806785378734}
+  firstSelected: {fileID: 0}
 --- !u!1 &3472454193382289901
 GameObject:
   m_ObjectHideFlags: 0
@@ -4837,6 +4840,7 @@ MonoBehaviour:
   UnpauseOnClose: 1
   CloseOnNewView: 1
   BackButon: {fileID: 6015147282059271788}
+  firstSelected: {fileID: 0}
 --- !u!1 &3740049496177446783
 GameObject:
   m_ObjectHideFlags: 0
@@ -10360,8 +10364,8 @@ RectTransform:
   - {fileID: 8146150603001244841}
   - {fileID: 8146150604295200974}
   - {fileID: 8146150602571357103}
-  - {fileID: 8146150602511548723}
   - {fileID: 8146150602302485075}
+  - {fileID: 8146150602511548723}
   - {fileID: 4567515321957078000}
   m_Father: {fileID: 8146150602880886203}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -10385,6 +10389,7 @@ MonoBehaviour:
   UnpauseOnClose: 1
   CloseOnNewView: 0
   BackButon: {fileID: 6082014409514280659}
+  firstSelected: {fileID: 0}
   SoulItemPlaceHolder: {fileID: 6435406957881164876}
   Description: {fileID: 8146150602232835790}
   Name: {fileID: 3747887395249707520}
@@ -13779,7 +13784,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 8146150604104137997}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.9998518
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

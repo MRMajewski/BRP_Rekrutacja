@@ -1,8 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnenmiesController : MonoBehaviour
+public class EnemiesController : MonoBehaviour
 {
     [SerializeField] private List<Sprite> AllEnemies;
     [SerializeField] private List<SpawnPoint> SpawnPoints;
@@ -11,14 +12,28 @@ public class EnenmiesController : MonoBehaviour
     private int _maxEnemies = 3;
     private int _currentEnemies = 0;
 
-    private void Awake()
+    [SerializeField]
+    public List<SoulEnemy> ActiveEnemies { get; private set; } = new List<SoulEnemy>();
+
+    public static event Action<SoulEnemy> OnEnemySpawned;
+
+    //private void Awake()
+    //{
+    //    ConfigureEnemiesController();
+    //}
+
+    //private void Start()
+    //{
+    //    SpawnEnemies();
+    //}
+
+    public void InitializeEnemies()
     {
         ConfigureEnemiesController();
-    }
-
-    private void Start()
-    {
         SpawnEnemies();
+
+
+        Debug.Log("EnemiesController zainicjalizowany");
     }
 
     private void OnEnable()
@@ -83,13 +98,18 @@ public class EnenmiesController : MonoBehaviour
         
         SpawnPoints[freeSpawnPointIndex].IsOccupied = true;
         SoulEnemy enemy = Instantiate(EnemyPrefab, SpawnPoints[freeSpawnPointIndex].Position.position, Quaternion.identity, transform).GetComponent<SoulEnemy>();
-        int spriteIndex = Random.Range(0, AllEnemies.Count);
+        int spriteIndex = UnityEngine.Random.Range(0, AllEnemies.Count);
         enemy.SetupEnemy(AllEnemies[spriteIndex], SpawnPoints[freeSpawnPointIndex]);
+
+        ActiveEnemies.Add(enemy);
         _currentEnemies++;
+
+        OnEnemySpawned?.Invoke(enemy);
     }
 
     private void DestroyKilledEnemy(GameObject enemy)
     {
+        ActiveEnemies.Remove(enemy.GetComponent<SoulEnemy>());
         Destroy(enemy);
     }
 
