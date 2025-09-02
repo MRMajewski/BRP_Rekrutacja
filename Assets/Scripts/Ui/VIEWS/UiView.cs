@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UiView : MonoBehaviour
+public class UiView : MonoBehaviour, IUIPanel
 {
 
     [Header("UI VIEW elements")] [SerializeField]
@@ -11,7 +11,10 @@ public class UiView : MonoBehaviour
     [SerializeField] private bool CloseOnNewView = true;
     [SerializeField] private Button BackButon;
 
+    [SerializeField] protected GameObject firstSelected;
+
     private UiView _parentView;
+
 
     public virtual void Awake()
     {
@@ -49,7 +52,8 @@ public class UiView : MonoBehaviour
     {
         if (onBackButtonAction != null) BackButon.onClick.AddListener(() => onBackButtonAction());
 
-        if (!gameObject.activeSelf) this.ActiveView(true);
+        if (!gameObject.activeSelf) 
+            this.ActiveView(true);
     }
 
     public void DisableView()
@@ -82,5 +86,25 @@ public class UiView : MonoBehaviour
     public Button GetBackButton()
     {
         return BackButon;
+    }
+
+    public void OnPanelActivated()
+    {
+       ActiveView_OnClick(this);
+    }
+
+    public void OnPanelDeactivated()
+    {
+        DisableView_OnClick(this);
+    }
+
+    public string GetPanelName()
+    {
+        throw new NotImplementedException();
+    }
+
+    public GameObject GetFirstSelected()
+    {
+        return firstSelected;
     }
 }
