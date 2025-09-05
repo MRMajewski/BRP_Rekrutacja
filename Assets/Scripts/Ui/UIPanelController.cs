@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using static GameplayInputController;
 
 public class UIPanelController : MonoBehaviour
 {
@@ -13,7 +14,7 @@ public class UIPanelController : MonoBehaviour
 
     [SerializeField] private List<UIPanelData> panelsList;
 
-
+    private Stack<Action> cancelStack = new Stack<Action>();
     private void OnEnable()
     {
         if (cancelAction != null)
@@ -54,9 +55,24 @@ public class UIPanelController : MonoBehaviour
         FocusFirst(panel);
     }
 
+    public void OpenPanelWithoutDeactivatePreviousPanel(IUIPanel panel)
+    {
+
+        panelStack.Push(panel);
+        panel.OnPanelActivated();
+
+        FocusFirst(panel);
+    }
+
     public void OpenPanel(UiView panel)
     {
         OpenPanel((IUIPanel)panel);
+    }
+
+
+    public void OpenPanelWithoutDeactivatePreviousPanel(UiView panel)
+    {
+        OpenPanelWithoutDeactivatePreviousPanel((IUIPanel)panel);
     }
 
     public void OpenInventoryPanel()
@@ -96,9 +112,47 @@ public class UIPanelController : MonoBehaviour
 
     private void OnCancel(InputAction.CallbackContext _)
     {
+
+        // Reaguj tylko, jeœli aktywna jest mapa UI
+        if (GameControlller.Instance.GameplayInput.CurrentMode != InputMode.UI)
+            return;
+
+        var currentPanel = GetCurrentPanel();
+
+        if (currentPanel is IUIPanelWithSelectionStack panelWithStack)
+        {
+            if (panelWithStack.TryHandleCancel())      
+            return;
+        }
+
         CloseCurrentPanel();
     }
+    public void PushCancelAction(Action action)
+    {
+        cancelStack.Push(action);
+    }
+    public void PopCancelAction()
+    {
+        if (cancelStack.Count > 0)
+            cancelStack.Pop();
+    }
 
+    public void HandleCancel()
+    {
+        if (cancelStack.Count > 0)
+        {
+            var action = cancelStack.Pop();
+            action?.Invoke();
+        }
+        else
+        {
+            CloseCurrentPanel();
+        }
+    }
+    public void ClearCancelStack()
+    {
+        cancelStack.Clear();
+    }
     public void CloseAllPanels()
     {
         while (panelStack.Count > 0)

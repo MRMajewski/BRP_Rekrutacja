@@ -15,6 +15,7 @@ public class UiView : MonoBehaviour, IUIPanel
 
     private UiView _parentView;
 
+    protected bool closePanelOnCancel = true;
 
     public virtual void Awake()
     {
@@ -88,12 +89,12 @@ public class UiView : MonoBehaviour, IUIPanel
         return BackButon;
     }
 
-    public void OnPanelActivated()
+    public virtual void OnPanelActivated()
     {
        ActiveView_OnClick(this);
     }
 
-    public void OnPanelDeactivated()
+    public virtual void OnPanelDeactivated()
     {
         DisableView_OnClick(this);
     }
@@ -103,8 +104,13 @@ public class UiView : MonoBehaviour, IUIPanel
         throw new NotImplementedException();
     }
 
-    public GameObject GetFirstSelected()
+    public virtual GameObject GetFirstSelected()
     {
         return firstSelected;
+    }
+
+    public bool GetCloseOnCancel()
+    {
+        return closePanelOnCancel;
     }
 }

@@ -1,247 +1,323 @@
-﻿using NUnit.Framework;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public class InventoryView : UiView
+public class InventoryView : UiView, IUIPanelWithSelectionStack
 {
-    [Header("Inventory Elements")] [SerializeField]
-    private SoulInformation SoulItemPlaceHolder;
+    [Header("Inventory Elements")]
+    [SerializeField] private SoulInformation soulItemPlaceholder;
+    [SerializeField] private Text descriptionText;
+    [SerializeField] private Text nameText;
+    [SerializeField] private Image avatarImage;
+    [SerializeField] private Button useButton;
+    [SerializeField] private Button destroyButton;
 
-    [SerializeField] private Text Description;
-    [SerializeField] private Text Name;
-    [SerializeField] private Image Avatar;
-    [SerializeField] private Button UseButton;
-    [SerializeField] private Button DestroyButton;
+    [SerializeField] private InputActionReference cancelAction;
 
-    private RectTransform _contentParent;
-    private GameObject _currentSelectedGameObject;
-    private SoulInformation _currentSoulInformation;
+    private RectTransform contentParent;
+    private SoulInformation currentSoulInfo;
+    private GameObject currentSelected;
 
-    [SerializeField]
-    private List<SoulInformation> soulsList = new List<SoulInformation>();
+    private readonly Stack<SelectionObjectInStack> selectionStack = new Stack<SelectionObjectInStack>();
+    private readonly List<SoulInformation> soulsList = new List<SoulInformation>();
 
     public override void Awake()
     {
         base.Awake();
-        _contentParent = (RectTransform)SoulItemPlaceHolder.transform.parent;
+        contentParent = (RectTransform)soulItemPlaceholder.transform.parent;
         InitializeInventoryItems();
-    }
-
-    private void InitializeInventoryItems()
-    {
-        soulsList.Clear();
-        soulsList.TrimExcess();
-
-        for (int i = 0, j = SoulController.Instance.Souls.Count; i < j; i++)
-        {
-            SoulInformation newSoul = Instantiate(SoulItemPlaceHolder.gameObject, _contentParent).GetComponent<SoulInformation>();
-            newSoul.SetSoulItem(SoulController.Instance.Souls[i], () => SoulItem_OnClick(newSoul));
-            soulsList.Add(newSoul);
-        }
-
-        SoulItemPlaceHolder.gameObject.SetActive(false);
-
-        firstSelected = soulsList.First().gameObject;
-
-        SetupGridNavigation();
     }
 
     private void OnEnable()
     {
-        ClearSoulInformation();
+        ClearSoulInfo();
+        if (cancelAction != null)
+            cancelAction.action.performed += OnCancel;
     }
 
-    private void ClearSoulInformation()
+    private void OnDisable()
     {
-        Description.text = "";
-        Name.text = "";
-        Avatar.sprite = null;
-        SetupUseButton(false);
-        SetupDestroyButton(false);
-        _currentSelectedGameObject = null;
-        _currentSoulInformation = null;
+        if (cancelAction != null)
+            cancelAction.action.performed -= OnCancel;
     }
 
-    public void SoulItem_OnClick(SoulInformation soulInformation)
+    // -----------------------------
+    // INIT
+    // -----------------------------
+    private void InitializeInventoryItems()
     {
-        _currentSoulInformation = soulInformation;
-        _currentSelectedGameObject = soulInformation.gameObject;
-        SetupSoulInformation(soulInformation.soulItem);
-        SelectActionButton(soulInformation);
+        soulsList.Clear();
 
-    }
-
-    private void SelectActionButton(SoulInformation soulInformation)
-    {
-        if (soulInformation.soulItem.CanBeUsed)
+        foreach (var soul in SoulController.Instance.Souls)
         {
-            EventSystem.current.SetSelectedGameObject(UseButton.gameObject);
-        }
-        else if (soulInformation.soulItem.CanBeDestroyed)
-        {
-            EventSystem.current.SetSelectedGameObject(DestroyButton.gameObject);
+            var newSoul = Instantiate(soulItemPlaceholder.gameObject, contentParent)
+                .GetComponent<SoulInformation>();
+
+            newSoul.SetSoulItem(soul, () => OnSoulClicked(newSoul));
+            soulsList.Add(newSoul);
         }
 
+        soulItemPlaceholder.gameObject.SetActive(false);
+        firstSelected = soulsList.FirstOrDefault()?.gameObject;
+
+        SetupGridNavigation();
     }
 
-    private void SetupSoulInformation(SoulItem soulItem)
+    // -----------------------------
+    // SELECT OBJECT AND ADD IT TO STACK
+    // -----------------------------
+    public void SelectObject(GameObject target, Action onCancel)
     {
-        Description.text = soulItem.Description;
-        Name.text = soulItem.Name;
-        Avatar.sprite = soulItem.Avatar;
-        SetupUseButton(soulItem.CanBeUsed);
-        SetupDestroyButton(soulItem.CanBeDestroyed);
-        SetupActionButtonsNavigation(soulItem);
+        if (target == null) return;
+
+        selectionStack.Push(new SelectionObjectInStack(target, onCancel));
+        EventSystem.current.SetSelectedGameObject(target);
     }
-    private void SetupActionButtonsNavigation(SoulItem soulItem)
+
+    public GameObject GetDefaultSelection()
     {
+        return soulsList.FirstOrDefault()?.gameObject;
+    }
 
-        bool useActive = soulItem.CanBeUsed;
-        bool destroyActive = soulItem.CanBeDestroyed;
+    public bool TryHandleCancel()
+    {
+        var fallback = GetDefaultSelection();
 
-
-        Navigation useNav = new Navigation { mode = Navigation.Mode.None };
-        Navigation destroyNav = new Navigation { mode = Navigation.Mode.None };
-
-        if (useActive && destroyActive)
+        if (selectionStack.Count == 0)
         {
+            if (fallback != null)
+                EventSystem.current.SetSelectedGameObject(fallback);
+            return false;
+        }
 
-            useNav = new Navigation
+        var current = selectionStack.Pop();
+        current.OnCancel?.Invoke();
+
+        GameObject target = null;
+        if (selectionStack.Count > 0)
+        {
+            var previous = selectionStack.Peek();
+            if (previous.SelectedObject != null && previous.SelectedObject.activeInHierarchy)
             {
-                mode = Navigation.Mode.Explicit,
-                selectOnRight = DestroyButton
-            };
-
-            destroyNav = new Navigation
+                target = previous.SelectedObject;
+            }
+            else
             {
-                mode = Navigation.Mode.Explicit,
-                selectOnLeft = UseButton
-            };
-        }
-        else if (useActive && !destroyActive)
-        {
-            useNav = new Navigation { mode = Navigation.Mode.None };
-        }
-        else if (!useActive && destroyActive)
-        {
-            destroyNav = new Navigation { mode = Navigation.Mode.None };
-        }
-        UseButton.navigation = useNav;
-        DestroyButton.navigation = destroyNav;
-
-    }
-    private void SelectElement(int index)
-    {
-
-    }
-
-    private void CantUseCurrentSoul()
-    {
-        PopUpInformation popUpInfo = new PopUpInformation { DisableOnConfirm = true, UseOneButton = true, Header = "CAN'T USE", Message = "THIS SOUL CANNOT BE USED IN THIS LOCALIZATION" };
-        GUIController.Instance.ShowPopUpMessage(popUpInfo);
-    }
-
-    private void UseCurrentSoul(bool canUse)
-    {
-        if (!canUse)
-        {
-            CantUseCurrentSoul();
+                target = fallback;
+            }
         }
         else
         {
-            //USE SOUL
-            Destroy(_currentSelectedGameObject);
-            ClearSoulInformation();
+            target = fallback;
+        }
+
+        if (target != null)
+            EventSystem.current.SetSelectedGameObject(target);
+
+        return true;
+    }
+    public void ClearStack() => selectionStack.Clear();
+    public Stack<SelectionObjectInStack> GetSelectionStack() => selectionStack;
+
+    // -----------------------------
+    // ON SOUL CLICKED
+    // -----------------------------
+    private void OnSoulClicked(SoulInformation soulInfo)
+    {
+        currentSoulInfo = soulInfo;
+        currentSelected = soulInfo.gameObject;
+
+        ShowSoulInfo(soulInfo.soulItem);
+
+        SelectObject(soulInfo.gameObject, () =>
+        {
+            Debug.Log($"Cancel on {soulInfo.soulItem.Name}");
+            ClearSoulInfo();
+        });
+
+        SelectActionButton(soulInfo);
+    }
+
+    private void SelectActionButton(SoulInformation soulInfo)
+    {
+        if (soulInfo.soulItem.CanBeUsed && useButton.interactable)
+        {
+            SelectObject(useButton.gameObject, () =>
+                EventSystem.current.SetSelectedGameObject(soulInfo.gameObject));
+        }
+        else if (soulInfo.soulItem.CanBeDestroyed && destroyButton.interactable)
+        {
+            SelectObject(destroyButton.gameObject, () =>
+                EventSystem.current.SetSelectedGameObject(soulInfo.gameObject));
         }
     }
 
-    private void DestroyCurrentSoul()
+    // -----------------------------
+    // Cancel
+    // -----------------------------
+    private void OnCancel(InputAction.CallbackContext ctx)
     {
-        Destroy(_currentSelectedGameObject);
-        ClearSoulInformation();
+        if (!TryHandleCancel())
+            UIPanelController.Instance.CloseCurrentPanel();
+    }
+
+
+
+    // -----------------------------
+    // UI Helpers
+    // -----------------------------
+    private void ShowSoulInfo(SoulItem soul)
+    {
+        descriptionText.text = soul.Description;
+        nameText.text = soul.Name;
+        avatarImage.sprite = soul.Avatar;
+
+        SetupUseButton(soul.CanBeUsed);
+        SetupDestroyButton(soul.CanBeDestroyed);
+        SetupActionButtonsNavigation(soul);
+    }
+
+    private void ClearSoulInfo()
+    {
+        descriptionText.text = "";
+        nameText.text = "";
+        avatarImage.sprite = null;
+        SetupUseButton(false);
+        SetupDestroyButton(false);
+        currentSelected = null;
+        currentSoulInfo = null;
     }
 
     private void SetupUseButton(bool active)
     {
-        UseButton.onClick.RemoveAllListeners();
-        if (active)
+        useButton.onClick.RemoveAllListeners();
+        useButton.gameObject.SetActive(active);
+
+        if (!active) return;
+
+        var isCorrect = GameControlller.Instance.IsCurrentLocalization(currentSoulInfo.soulItem.UsableInLocalization);
+        useButton.interactable = isCorrect;
+
+        useButton.onClick.AddListener(() =>
         {
-            bool isInCorrectLocalization = GameControlller.Instance.IsCurrentLocalization(_currentSoulInformation.soulItem.UsableInLocalization);
-
-            if (!isInCorrectLocalization)
-            {
-                UseButton.interactable = false;
-                return;
-            }
-
-
-            PopUpInformation popUpInfo = new PopUpInformation
-            {
-                DisableOnConfirm = isInCorrectLocalization,
-                UseOneButton = false,
-                Header = "USE ITEM",
-                Message = "Are you sure you want to USE: " + _currentSoulInformation.soulItem.Name + " ?",
-                Confirm_OnClick = () => UseCurrentSoul(isInCorrectLocalization)
-            };
-            UseButton.onClick.AddListener(() => GUIController.Instance.ShowPopUpMessage(popUpInfo));
-            UseButton.interactable = true;
-        }
-        UseButton.gameObject.SetActive(active);
-
-
+            if (isCorrect) UseSoul(); else ShowCantUsePopup();
+        });
     }
+
+    private void SetupDestroyButton(bool active)
+    {
+        destroyButton.onClick.RemoveAllListeners();
+        destroyButton.gameObject.SetActive(active);
+
+        if (!active) return;
+
+        destroyButton.onClick.AddListener(() => ShowDestroyPopup());
+    }
+
+    // -----------------------------
+    // ACTIONS
+    // -----------------------------
+    private void UseSoul()
+    {
+
+        soulsList.Remove(currentSoulInfo);
+        soulsList.TrimExcess();
+        SetupGridNavigation();
+
+
+        Destroy(currentSelected);
+
+        ClearSoulInfo();
+        TryHandleCancel();
+
+      //  if (!TryHandleCancel())
+       //     UIPanelController.Instance.CloseCurrentPanel();
+    }
+
+    private void DestroySoul()
+    {
+        soulsList.Remove(currentSoulInfo);
+        soulsList.TrimExcess();
+        SetupGridNavigation();
+
+        Destroy(currentSelected);
+        ClearSoulInfo();
+        TryHandleCancel();
+
+      //  if (!TryHandleCancel())
+      //     UIPanelController.Instance.CloseCurrentPanel();
+    }
+
+    private void ShowCantUsePopup()
+    {
+        GUIController.Instance.ShowPopUpMessage(new PopUpInformation
+        {
+            Header = "CAN'T USE",
+            Message = "This soul can't be used here",
+            UseOneButton = true,
+            DisableOnConfirm = true,
+            Confirm = UseSoul,
+            Cancel = () => {
+                TryHandleCancel();
+            }
+        }, this);
+    }
+
+    private void ShowDestroyPopup()
+    {
+        GUIController.Instance.ShowPopUpMessage(new PopUpInformation
+        {
+            Header = "DESTROY ITEM",
+            Message = $"Destroy {nameText.text}?",
+            UseOneButton = false,
+            Confirm = DestroySoul,
+            Cancel = () => { TryHandleCancel(); 
+            }
+        }, this);
+    }
+
+    // -----------------------------
+    // GRID NAV
+    // -----------------------------
     private void SetupGridNavigation()
     {
         int columns = 3;
 
         for (int i = 0; i < soulsList.Count; i++)
         {
-            Button button = soulsList[i].GetComponent<Button>();
+            var button = soulsList[i].GetComponent<Button>();
             if (button == null) continue;
 
-            Navigation nav = new Navigation
-            {
-                mode = Navigation.Mode.Explicit
-            };
+            var nav = new Navigation { mode = Navigation.Mode.Explicit };
 
-            int rowIndex = i / columns;
-            int columnIndex = i % columns;
+            int row = i / columns;
+            int col = i % columns;
 
-            if (columnIndex > 0)
-                nav.selectOnLeft = soulsList[i - 1].GetComponent<Button>();
-
-            if (columnIndex < columns - 1 && i + 1 < soulsList.Count)
-                nav.selectOnRight = soulsList[i + 1].GetComponent<Button>();
-
-            if (rowIndex > 0)
-                nav.selectOnUp = soulsList[i - columns].GetComponent<Button>();
-
-            if (i + columns < soulsList.Count)
-                nav.selectOnDown = soulsList[i + columns].GetComponent<Button>();
+            if (col > 0) nav.selectOnLeft = soulsList[i - 1].GetComponent<Button>();
+            if (col < columns - 1 && i + 1 < soulsList.Count) nav.selectOnRight = soulsList[i + 1].GetComponent<Button>();
+            if (row > 0) nav.selectOnUp = soulsList[i - columns].GetComponent<Button>();
+            if (i + columns < soulsList.Count) nav.selectOnDown = soulsList[i + columns].GetComponent<Button>();
 
             button.navigation = nav;
         }
     }
 
-    private void SetupDestroyButton(bool active)
+    private void SetupActionButtonsNavigation(SoulItem soul)
     {
-        DestroyButton.onClick.RemoveAllListeners();
-        if (active)
+        var useNav = new Navigation { mode = Navigation.Mode.None };
+        var destroyNav = new Navigation { mode = Navigation.Mode.None };
+
+        if (soul.CanBeUsed && soul.CanBeDestroyed)
         {
-            PopUpInformation popUpInfo = new PopUpInformation
-            {
-                DisableOnConfirm = true,
-                UseOneButton = false,
-                Header = "DESTROY ITEM",
-                Message = "Are you sure you want to DESTROY: " + Name.text + " ?",
-                Confirm_OnClick = () => DestroyCurrentSoul()
-            };
-            DestroyButton.onClick.AddListener(() => GUIController.Instance.ShowPopUpMessage(popUpInfo));
+            useNav = new Navigation { mode = Navigation.Mode.Explicit, selectOnRight = destroyButton };
+            destroyNav = new Navigation { mode = Navigation.Mode.Explicit, selectOnLeft = useButton };
         }
 
-        DestroyButton.gameObject.SetActive(active);
+        useButton.navigation = useNav;
+        destroyButton.navigation = destroyNav;
     }
 }

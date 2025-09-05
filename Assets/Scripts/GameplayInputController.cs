@@ -11,16 +11,22 @@ public class GameplayInputController : MonoBehaviour
 
     private int _currentEnemyIndex = 0;
 
-
     private PadControls inputActions;
+    public PadControls InputActions { get => inputActions; }
+    public enum InputMode { Gameplay, UI }
+
+    [SerializeField]
+    public InputMode CurrentMode { get; private set; } = InputMode.Gameplay;
 
     private void Awake()
     {
         inputActions = new PadControls();
+
     }
 
     private void OnEnable()
     {
+        SwitchToGameplayInput();
         // Subskrypcje
         inputActions.Gameplay.Options.performed += OnPause;
         inputActions.Gameplay.Inventory.performed += OnInventory;
@@ -75,17 +81,20 @@ public class GameplayInputController : MonoBehaviour
         }
     }
 
-
     public void SwitchToUIInput()
     {
         inputActions.Gameplay.Disable();
         inputActions.UI.Enable();
+        CurrentMode = InputMode.UI;
+        Debug.Log("Przełączono na UI");
     }
 
     public void SwitchToGameplayInput()
     {
         inputActions.UI.Disable();
         inputActions.Gameplay.Enable();
+        CurrentMode = InputMode.Gameplay;
+        Debug.Log("Przełączono na Gameplay");
     }
 
     public void ReturnFromUI()

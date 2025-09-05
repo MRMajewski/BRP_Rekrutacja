@@ -31,10 +31,15 @@ public class GUIController : MonoBehaviour
         InGameGuiObject.SetActive(active);
     }
 
-    public void ShowPopUpMessage(PopUpInformation popUpInfo)
+    public void ShowPopUpMessage(PopUpInformation popUpInfo, IUIPanelWithSelectionStack parent = null)
     {
-        PopUpView newPopUp = Instantiate(PopUp, ViewsParent) as PopUpView;
+        //PopUpView newPopUp = Instantiate(PopUp, ViewsParent) as PopUpView;
+        //newPopUp.ActivePopUpView(popUpInfo);
+        PopUpView newPopUp = Instantiate(PopUp, ViewsParent);
+        newPopUp.parentView = parent;
         newPopUp.ActivePopUpView(popUpInfo);
+        //PopUpView newPopUp = Instantiate(PopUp, ViewsParent);
+        //newPopUp.ActivePopUpView(popUpInfo);
     }
 
     public void ActiveScreenBlocker(bool active, PopUpView popUpView)

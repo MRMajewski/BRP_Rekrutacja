@@ -10,5 +10,7 @@ public interface IUIPanel
 
     string GetPanelName();
 
+    bool GetCloseOnCancel();
+
     GameObject GetFirstSelected();
 }
