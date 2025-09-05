@@ -35,16 +35,8 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
     private void OnEnable()
     {
         ClearSoulInfo();
-        if (cancelAction != null)
-            cancelAction.action.performed += OnCancel;
-    }
 
-    private void OnDisable()
-    {
-        if (cancelAction != null)
-            cancelAction.action.performed -= OnCancel;
     }
-
     // -----------------------------
     // INIT
     // -----------------------------
@@ -70,12 +62,19 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
     // -----------------------------
     // SELECT OBJECT AND ADD IT TO STACK
     // -----------------------------
-    public void SelectObject(GameObject target, Action onCancel)
+    public void PushToSelectionStack(GameObject target, Action onCancel)
     {
         if (target == null) return;
 
         selectionStack.Push(new SelectionObjectInStack(target, onCancel));
-        EventSystem.current.SetSelectedGameObject(target);
+        LogSelectionStack($"PushToSelectionStack -> {target.name}");
+
+    }
+
+    private void SetSelection(GameObject target)
+    {
+        if (target != null)
+            EventSystem.current.SetSelectedGameObject(target);
     }
 
     public GameObject GetDefaultSelection()
@@ -87,39 +86,26 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
     {
         var fallback = GetDefaultSelection();
 
-        if (selectionStack.Count == 0)
+        while (selectionStack.Count > 0)
         {
-            if (fallback != null)
-                EventSystem.current.SetSelectedGameObject(fallback);
-            return false;
-        }
+            var current = selectionStack.Pop();
 
-        var current = selectionStack.Pop();
-        current.OnCancel?.Invoke();
-
-        GameObject target = null;
-        if (selectionStack.Count > 0)
-        {
-            var previous = selectionStack.Peek();
-            if (previous.SelectedObject != null && previous.SelectedObject.activeInHierarchy)
+            if (current.SelectedObject == null)
             {
-                target = previous.SelectedObject;
+                return false;
             }
-            else
+            current.OnCancel?.Invoke();
+
+            if (current.SelectedObject != null && current.SelectedObject.activeInHierarchy)
             {
-                target = fallback;
+                EventSystem.current.SetSelectedGameObject(current.SelectedObject);
+                return true;
             }
         }
-        else
-        {
-            target = fallback;
-        }
-
-        if (target != null)
-            EventSystem.current.SetSelectedGameObject(target);
-
-        return true;
+        return false;
     }
+
+
     public void ClearStack() => selectionStack.Clear();
     public Stack<SelectionObjectInStack> GetSelectionStack() => selectionStack;
 
@@ -133,10 +119,12 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
 
         ShowSoulInfo(soulInfo.soulItem);
 
-        SelectObject(soulInfo.gameObject, () =>
+        PushToSelectionStack(soulInfo.gameObject, () =>
         {
-            Debug.Log($"Cancel on {soulInfo.soulItem.Name}");
-            ClearSoulInfo();
+            if(soulInfo.gameObject==null)
+            {
+                Debug.Log("TEST");
+            }
         });
 
         SelectActionButton(soulInfo);
@@ -146,23 +134,12 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
     {
         if (soulInfo.soulItem.CanBeUsed && useButton.interactable)
         {
-            SelectObject(useButton.gameObject, () =>
-                EventSystem.current.SetSelectedGameObject(soulInfo.gameObject));
+            SetSelection(useButton.gameObject);
         }
         else if (soulInfo.soulItem.CanBeDestroyed && destroyButton.interactable)
         {
-            SelectObject(destroyButton.gameObject, () =>
-                EventSystem.current.SetSelectedGameObject(soulInfo.gameObject));
+            SetSelection(destroyButton.gameObject);
         }
-    }
-
-    // -----------------------------
-    // Cancel
-    // -----------------------------
-    private void OnCancel(InputAction.CallbackContext ctx)
-    {
-        if (!TryHandleCancel())
-            UIPanelController.Instance.CloseCurrentPanel();
     }
 
 
@@ -215,43 +192,66 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
 
         if (!active) return;
 
-        destroyButton.onClick.AddListener(() => ShowDestroyPopup());
+        destroyButton.onClick.AddListener(() =>
+        {
+            PushToSelectionStack(destroyButton.gameObject, () =>
+            {
+                SetSelection(destroyButton.gameObject);
+
+                GUIController.Instance.CloseCurrentPopUp();
+            });
+
+            ShowDestroyPopup();
+
+
+        });
     }
 
     // -----------------------------
     // ACTIONS
     // -----------------------------
+
     private void UseSoul()
     {
-
         soulsList.Remove(currentSoulInfo);
         soulsList.TrimExcess();
         SetupGridNavigation();
 
-
         Destroy(currentSelected);
 
+        currentSelected = null;
+        currentSoulInfo = null;
         ClearSoulInfo();
-        TryHandleCancel();
 
-      //  if (!TryHandleCancel())
-       //     UIPanelController.Instance.CloseCurrentPanel();
+        SelectFallbackAfterRemoval();
     }
+
+    private void SelectFallbackAfterRemoval()
+    {
+        var fallback = GetDefaultSelection();
+
+        if (fallback != null)
+            EventSystem.current.SetSelectedGameObject(fallback);
+        else
+            UIPanelController.Instance.CloseCurrentPanel();
+    }
+
 
     private void DestroySoul()
     {
+        var fallback = GetDefaultSelection(); 
         soulsList.Remove(currentSoulInfo);
         soulsList.TrimExcess();
         SetupGridNavigation();
 
         Destroy(currentSelected);
         ClearSoulInfo();
-        TryHandleCancel();
 
-      //  if (!TryHandleCancel())
-      //     UIPanelController.Instance.CloseCurrentPanel();
+        if (fallback != null)
+            EventSystem.current.SetSelectedGameObject(fallback);
+        else
+            UIPanelController.Instance.CloseCurrentPanel();
     }
-
     private void ShowCantUsePopup()
     {
         GUIController.Instance.ShowPopUpMessage(new PopUpInformation
@@ -260,8 +260,8 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
             Message = "This soul can't be used here",
             UseOneButton = true,
             DisableOnConfirm = true,
-            Confirm = UseSoul,
-            Cancel = () => {
+            Confirm = () =>
+            {
                 TryHandleCancel();
             }
         }, this);
@@ -274,10 +274,18 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
             Header = "DESTROY ITEM",
             Message = $"Destroy {nameText.text}?",
             UseOneButton = false,
-            Confirm = DestroySoul,
-            Cancel = () => { TryHandleCancel(); 
+            Confirm = () =>
+            {
+                TryHandleCancel();
+                DestroySoul();
+
+            },
+            Cancel = () =>
+            {
+                TryHandleCancel();
             }
         }, this);
+
     }
 
     // -----------------------------
@@ -319,5 +327,14 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
 
         useButton.navigation = useNav;
         destroyButton.navigation = destroyNav;
+    }
+
+    private void LogSelectionStack(string context)
+    {
+        string topName = selectionStack.Count > 0 && selectionStack.Peek().SelectedObject != null
+            ? selectionStack.Peek().SelectedObject.name
+            : "NULL";
+
+        Debug.Log($"[{context}] Stack count: {selectionStack.Count}, Top: {topName}");
     }
 }

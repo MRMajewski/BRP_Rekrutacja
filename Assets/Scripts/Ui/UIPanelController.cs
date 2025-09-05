@@ -45,7 +45,6 @@ public class UIPanelController : MonoBehaviour
     {
         if (panel == null) return;
 
-        // Schowaj aktualny
         if (panelStack.Count > 0)
             panelStack.Peek().OnPanelDeactivated();
 
@@ -113,7 +112,6 @@ public class UIPanelController : MonoBehaviour
     private void OnCancel(InputAction.CallbackContext _)
     {
 
-        // Reaguj tylko, jeœli aktywna jest mapa UI
         if (GameControlller.Instance.GameplayInput.CurrentMode != InputMode.UI)
             return;
 
@@ -159,9 +157,6 @@ public class UIPanelController : MonoBehaviour
             panelStack.Pop().OnPanelDeactivated();
 
         GameControlller.Instance.GameplayInput.ReturnFromUI();
-     
-        //if (EventSystem.current != null)
-        //    EventSystem.current.SetSelectedGameObject(null);
     }
 
     public IUIPanel GetCurrentPanel() => panelStack.Count > 0 ? panelStack.Peek() : null;
@@ -171,7 +166,7 @@ public class UIPanelController : MonoBehaviour
         if (EventSystem.current == null || panel == null) return;
 
         var first = panel.GetFirstSelected();
-        EventSystem.current.SetSelectedGameObject(null); // reset
+        EventSystem.current.SetSelectedGameObject(null);
         if (first != null)
             EventSystem.current.SetSelectedGameObject(first);
     }

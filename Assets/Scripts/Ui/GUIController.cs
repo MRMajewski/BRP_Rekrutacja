@@ -6,7 +6,7 @@ public class GUIController : MonoBehaviour
     #region singleton
 
     public static GUIController Instance;
-
+    private PopUpView currentPopUp;
     private void Awake()
     {
         DisableOnStartObject.SetActive(false);
@@ -40,8 +40,27 @@ public class GUIController : MonoBehaviour
         newPopUp.ActivePopUpView(popUpInfo);
         //PopUpView newPopUp = Instantiate(PopUp, ViewsParent);
         //newPopUp.ActivePopUpView(popUpInfo);
+        currentPopUp = newPopUp;
     }
 
+    public void ClosePopUp(PopUpView popUpView)
+    {
+        if (popUpView != null)
+        {
+            Destroy(popUpView.gameObject);
+            if (currentPopUp == popUpView)
+                currentPopUp = null;
+        }
+    }
+
+    public void CloseCurrentPopUp()
+    {
+        if (currentPopUp != null)
+        {
+            Destroy(currentPopUp.gameObject);
+            currentPopUp = null;
+        }
+    }
     public void ActiveScreenBlocker(bool active, PopUpView popUpView)
     {
         if (active) ScreenBlocker.AddPopUpView(popUpView);

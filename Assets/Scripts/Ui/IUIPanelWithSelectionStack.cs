@@ -7,7 +7,7 @@ public interface IUIPanelWithSelectionStack
     public Stack<SelectionObjectInStack> GetSelectionStack();
 
     //   public void RegisterCancelForCurrent(GameObject current);
-    public void SelectObject(GameObject target, Action onCancel);
+    public void PushToSelectionStack(GameObject target, Action onCancel);
 
     public bool TryHandleCancel();
 
