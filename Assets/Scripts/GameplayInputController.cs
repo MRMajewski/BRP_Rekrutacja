@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -47,11 +48,11 @@ public class GameplayInputController : MonoBehaviour
     }
     private void OnConfirm(InputAction.CallbackContext ctx)
     {
-        //if (EventSystem.current.currentSelectedGameObject.TryGetComponent( out Button actionButton))
-        //{
-        //    actionButton.onClick.Invoke();
-            
-        //}
+        if (EventSystem.current.currentSelectedGameObject.TryGetComponent(out Button actionButton))
+        {
+            actionButton.onClick.Invoke();
+            return;
+        }
     }
 
     private void OnPause(InputAction.CallbackContext ctx)
@@ -73,14 +74,27 @@ public class GameplayInputController : MonoBehaviour
     private void OnCancel(InputAction.CallbackContext ctx)
     {
         Debug.Log("Cancel pressed");
-        // TODO: logika cofania / zamykania paneli
 
-        if (enemiesController.ActiveEnemies[0].IsActionPanelOpen)
+        var enemies = GetOccupiedEnemies();
+        if (enemies.Count == 0) return;
+
+        SoulEnemy currentEnemy = enemies[_currentEnemyIndex];
+        if (currentEnemy.IsActionPanelOpen)
         {
-            enemiesController.ActiveEnemies[0].CancelCombatWithEnemy();
+            currentEnemy.CancelCombatWithEnemy();
         }
-    }
+        //Debug.Log("Cancel pressed");
+        //// TODO: logika cofania / zamykania paneli
 
+        //if (enemiesController.ActiveEnemies[0].IsActionPanelOpen)
+        //{
+        //    enemiesController.ActiveEnemies[0].CancelCombatWithEnemy();
+        //}
+    }
+    private List<SoulEnemy> GetOccupiedEnemies()
+    {
+        return enemiesController.GetActiveEnemies();
+    }
     public void SwitchToUIInput()
     {
         inputActions.Gameplay.Disable();
@@ -101,41 +115,75 @@ public class GameplayInputController : MonoBehaviour
     {
         SwitchToGameplayInput();
 
-        if (enemiesController.ActiveEnemies[0].IsActionPanelOpen)
-        {
-            EventSystem.current.SetSelectedGameObject(enemiesController.ActiveEnemies[0].GetBowButton().gameObject);
-        }
-        else
-            EventSystem.current.SetSelectedGameObject(enemiesController.ActiveEnemies[0].GetCombatButton().gameObject);
+        var enemies = GetOccupiedEnemies();
+        if (enemies.Count == 0) return;
+
+        SoulEnemy currentEnemy = enemies[_currentEnemyIndex];
+        EventSystem.current.SetSelectedGameObject(
+            currentEnemy.IsActionPanelOpen ?
+            currentEnemy.GetBowButton().gameObject :
+            currentEnemy.GetCombatButton().gameObject
+        );
+
+        //if (enemiesController.ActiveEnemies[0].IsActionPanelOpen)
+        //{
+        //    EventSystem.current.SetSelectedGameObject(enemiesController.ActiveEnemies[0].GetBowButton().gameObject);
+        //}
+        //else
+        //    EventSystem.current.SetSelectedGameObject(enemiesController.ActiveEnemies[0].GetCombatButton().gameObject);
+
+
+
     }
 
 
     public void FocusOnFirstEnemy()
     {
-        FocusEnemy(enemiesController.ActiveEnemies[0]);
-    }
+        var enemies = GetOccupiedEnemies();
+        if (enemies.Count == 0) return;
 
-    private void FocusEnemy(SoulEnemy enemy)
+        _currentEnemyIndex = 0;
+        FocusEnemy(enemies[_currentEnemyIndex]);
+      //  FocusEnemy(enemiesController.ActiveEnemies[0]);
+    }
+    private void OnEnemySpawned(SoulEnemy enemy)
     {
         if (enemy == null) return;
-        EventSystem.current.SetSelectedGameObject(enemy.GetCombatButton().gameObject);
-    }
 
+        var enemies = GetOccupiedEnemies();
+        _currentEnemyIndex = enemies.IndexOf(enemy);
+        FocusEnemy(enemy);
+    }
+    public void FocusEnemy(SoulEnemy enemy)
+    {
+        if (enemy == null) return;
+
+        var enemies = GetOccupiedEnemies();
+        _currentEnemyIndex = enemies.IndexOf(enemy);
+
+        EventSystem.current.SetSelectedGameObject(enemy.GetCombatButton().gameObject);
+        // FocusEnemy(enemy);
+        //   if (enemy == null) return;
+        //  EventSystem.current.SetSelectedGameObject(enemy.GetCombatButton().gameObject);
+    }
     public void FocusNextEnemy()
     {
-        if (enemiesController.ActiveEnemies.Count == 0) return;
+        var enemies = GetOccupiedEnemies();
+        if (enemies.Count == 0) return;
 
-        _currentEnemyIndex = (_currentEnemyIndex + 1) % enemiesController.ActiveEnemies.Count;
-        FocusEnemy(enemiesController.ActiveEnemies[_currentEnemyIndex]);
+        _currentEnemyIndex = (_currentEnemyIndex + 1) % enemies.Count;
+        FocusEnemy(enemies[_currentEnemyIndex]);
     }
 
     public void FocusPreviousEnemy()
     {
-        if (enemiesController.ActiveEnemies.Count == 0) return;
+        var enemies = GetOccupiedEnemies();
+        if (enemies.Count == 0) return;
 
         _currentEnemyIndex--;
-        if (_currentEnemyIndex < 0) _currentEnemyIndex = enemiesController.ActiveEnemies.Count - 1;
+        if (_currentEnemyIndex < 0) _currentEnemyIndex = enemies.Count - 1;
 
-        FocusEnemy(enemiesController.ActiveEnemies[_currentEnemyIndex]);
+        FocusEnemy(enemies[_currentEnemyIndex]);
     }
+   
 }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
@@ -24,10 +25,28 @@ public class SoulEnemy : MonoBehaviour, IEnemy
     private bool isActionPanelOpen = false;
 
     public bool IsActionPanelOpen {  get { return isActionPanelOpen; } }
-    public void SetupEnemy(Sprite sprite, SpawnPoint spawnPoint)
+
+    private EnemyWeakness enemyWeakness;
+    private EnemyWeakness killingAttackType;
+
+    [SerializeField] private int basePoints = 100; 
+
+    public int GetBasePoints()
+    {
+      return basePoints;
+    }
+
+    public EnemyWeakness GetWeakness()
+    {
+         return enemyWeakness;
+    }
+ 
+
+    public void SetupEnemy(Sprite sprite, SpawnPoint spawnPoint, EnemyWeakness weakness)
     {
         EnemySpriteRenderer.sprite = sprite;
         _enemyPosition = spawnPoint;
+        enemyWeakness = weakness;
         gameObject.SetActive(true);
     }
 
@@ -46,9 +65,22 @@ public class SoulEnemy : MonoBehaviour, IEnemy
         ActiveInteractionPanel(false);
         ActiveActionPanel(true);
 
+        StartCoroutine(SetSelectedBowNextFrame());
+    }
+    //private void ActiveCombatWithEnemy()
+    //{
+    //    ActiveInteractionPanel(false);
+    //    ActiveActionPanel(true);
+
+    //    // Odrocz ustawienie focusu na kolejny frame
+    //    StartCoroutine(SetSelectedBowNextFrame());
+    //}
+
+    private IEnumerator SetSelectedBowNextFrame()
+    {
+        yield return null; // czeka do następnego frame
         EventSystem.current.SetSelectedGameObject(bowButton.gameObject);
     }
-
     public void CancelCombatWithEnemy()
     {
         ActiveInteractionPanel(true);
@@ -72,12 +104,14 @@ public class SoulEnemy : MonoBehaviour, IEnemy
     private void UseBow()
     {
         // USE BOW
+        killingAttackType = EnemyWeakness.RANGE;
         GameEvents.EnemyKilled?.Invoke(this);
     }
 
 
     private void UseSword()
     {
+        killingAttackType = EnemyWeakness.MELEE;
         GameEvents.EnemyKilled?.Invoke(this);
         // USE SWORD
     }
@@ -99,6 +133,11 @@ public class SoulEnemy : MonoBehaviour, IEnemy
         UseSword();
     }
 
+    public EnemyWeakness GetKillingAttackType()
+    {
+        return killingAttackType;
+    }
+
     #endregion
 }
 
@@ -107,4 +146,13 @@ public interface IEnemy
 {
     SpawnPoint GetEnemyPosition();
     GameObject GetEnemyObject();
+    int GetBasePoints();
+    EnemyWeakness GetWeakness();  // <-- słabość wroga
+    EnemyWeakness GetKillingAttackType(); // <-- czym został zabity
+}
+
+public enum EnemyWeakness
+{
+    MELEE,
+    RANGE
 }

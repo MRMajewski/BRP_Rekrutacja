@@ -234,6 +234,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &492122934 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7683785900575714090, guid: e56bfdd5b40390546bd93dc024a6c032,
+    type: 3}
+  m_PrefabInstance: {fileID: 8146150603569056819}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &515679253 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8423962129630849685, guid: e56bfdd5b40390546bd93dc024a6c032,
@@ -687,6 +699,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1193640656}
   - component: {fileID: 1193640657}
+  - component: {fileID: 1193640658}
   m_Layer: 0
   m_Name: UIController
   m_TagString: Untagged
@@ -734,6 +747,19 @@ MonoBehaviour:
     panelObject: {fileID: 515679253}
   - Name: Credits
     panelObject: {fileID: 1058666934}
+--- !u!114 &1193640658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1193640655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61cc5e159cf05ee4b891a44eb7ea5f89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  scoreText: {fileID: 492122934}
 --- !u!1 &1410769718
 GameObject:
   m_ObjectHideFlags: 0
@@ -2454,7 +2480,7 @@ PrefabInstance:
     - target: {fileID: 8146150602394358071, guid: e56bfdd5b40390546bd93dc024a6c032,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.0003844772
+      value: -0.00006962989
       objectReference: {fileID: 0}
     - target: {fileID: 8146150602511548723, guid: e56bfdd5b40390546bd93dc024a6c032,
         type: 3}
@@ -2866,6 +2892,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8146150604206578818, guid: e56bfdd5b40390546bd93dc024a6c032,
+        type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 8146150604206578845, guid: e56bfdd5b40390546bd93dc024a6c032,
         type: 3}
       propertyPath: m_Name
@@ -2939,6 +2970,11 @@ PrefabInstance:
     - target: {fileID: 8801312614349466923, guid: e56bfdd5b40390546bd93dc024a6c032,
         type: 3}
       propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9136090258779202840, guid: e56bfdd5b40390546bd93dc024a6c032,
+        type: 3}
+      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9151530572396382779, guid: e56bfdd5b40390546bd93dc024a6c032,
