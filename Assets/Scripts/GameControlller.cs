@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.EventSystems;
 
 public enum GameLocalization
 {
@@ -41,7 +40,8 @@ public class GameControlller : MonoBehaviour
     [SerializeField] private UIPanelController uiPanelController;
 
     [SerializeField] private GameplayInputController gameplayInput;
-
+    [SerializeField] private ScoreManager scoreManager;
+ 
     public GameLocalization CurrentGameLocalization
     {
         get => currentGameLocalization;
@@ -52,7 +52,7 @@ public class GameControlller : MonoBehaviour
    public EnemiesController EnemiesController { get => enemiesController; }
    public UIPanelController UIPanelController { get => uiPanelController; }
    public GameplayInputController GameplayInput { get => gameplayInput; }
-
+    public ScoreManager ScoreManager => scoreManager;
     private bool _isPaused;
 
     public bool IsPaused
@@ -82,7 +82,7 @@ public class GameControlller : MonoBehaviour
         IsPaused = false;
         enemiesController.InitializeEnemies();
         gameplayInput.FocusOnFirstEnemy();
-      //  uiPanelController.InitUIPanelController(eventSystem);
-
+        scoreManager.InitScore();
+     
     }
 }

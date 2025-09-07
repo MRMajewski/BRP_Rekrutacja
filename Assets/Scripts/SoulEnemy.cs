@@ -29,7 +29,9 @@ public class SoulEnemy : MonoBehaviour, IEnemy
     private EnemyWeakness enemyWeakness;
     private EnemyWeakness killingAttackType;
 
-    [SerializeField] private int basePoints = 100; 
+    [SerializeField] private int basePoints = 100;
+
+    private bool isDead = false;
 
     public int GetBasePoints()
     {
@@ -65,20 +67,13 @@ public class SoulEnemy : MonoBehaviour, IEnemy
         ActiveInteractionPanel(false);
         ActiveActionPanel(true);
 
+
         StartCoroutine(SetSelectedBowNextFrame());
     }
-    //private void ActiveCombatWithEnemy()
-    //{
-    //    ActiveInteractionPanel(false);
-    //    ActiveActionPanel(true);
-
-    //    // Odrocz ustawienie focusu na kolejny frame
-    //    StartCoroutine(SetSelectedBowNextFrame());
-    //}
 
     private IEnumerator SetSelectedBowNextFrame()
     {
-        yield return null; // czeka do następnego frame
+        yield return null; 
         EventSystem.current.SetSelectedGameObject(bowButton.gameObject);
     }
     public void CancelCombatWithEnemy()
@@ -104,16 +99,22 @@ public class SoulEnemy : MonoBehaviour, IEnemy
     private void UseBow()
     {
         // USE BOW
+        if (isDead) return; 
         killingAttackType = EnemyWeakness.RANGE;
+        isDead = true;
         GameEvents.EnemyKilled?.Invoke(this);
+        return;
     }
 
 
     private void UseSword()
     {
+        if (isDead) return;
         killingAttackType = EnemyWeakness.MELEE;
+        isDead = true;
         GameEvents.EnemyKilled?.Invoke(this);
         // USE SWORD
+        return;
     }
 
     #region OnClicks

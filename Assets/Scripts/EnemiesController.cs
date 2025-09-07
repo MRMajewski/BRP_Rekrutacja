@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class EnemiesController : MonoBehaviour
 {
@@ -55,19 +56,45 @@ public class EnemiesController : MonoBehaviour
     //    DestroyKilledEnemy(enemy.GetEnemyObject());
     //    StartCoroutine(SpawnEnemyViaCor());
     //}
+
+
     private void EnemyKilled(IEnemy enemy)
     {
+        // Startujemy coroutine, żeby odroczyć usunięcie wroga
+        StartCoroutine(HandleEnemyKilled(enemy));
+    }
+
+    private IEnumerator HandleEnemyKilled(IEnemy enemy)
+    {
+
+        // Poczekaj chwilę (np. 0.1-0.3s)
+        yield return new WaitForSecondsRealtime(TweensManager.Instance.EffectDuration+.3f);
+
+        // Zwolnienie slotu
         SoulEnemySlot slot = GetSlotByEnemy(enemy.GetEnemyObject().GetComponent<SoulEnemy>());
         if (slot != null)
-        {
-            slot.enemy = null; // zwolnienie slotu
-        }
+            slot.enemy = null;
 
         DestroyKilledEnemy(enemy.GetEnemyObject());
 
-        _currentEnemies = Mathf.Max(0, _currentEnemies - 1); // zmniejszenie licznika
-        StartCoroutine(SpawnEnemyViaCor()); // nowy enemy może pojawić się w zwolnionym slocie
+        _currentEnemies = Mathf.Max(0, _currentEnemies - 1);
+        StartCoroutine(SpawnEnemyViaCor());
     }
+
+
+    //private void EnemyKilled(IEnemy enemy)
+    //{
+    //    SoulEnemySlot slot = GetSlotByEnemy(enemy.GetEnemyObject().GetComponent<SoulEnemy>());
+    //    if (slot != null)
+    //    {
+    //        slot.enemy = null; // zwolnienie slotu
+    //    }
+
+    //    DestroyKilledEnemy(enemy.GetEnemyObject());
+
+    //    _currentEnemies = Mathf.Max(0, _currentEnemies - 1); // zmniejszenie licznika
+    //    StartCoroutine(SpawnEnemyViaCor()); // nowy enemy może pojawić się w zwolnionym slocie
+    //}
 
     private void SpawnEnemies()
     {
@@ -120,7 +147,13 @@ public class EnemiesController : MonoBehaviour
         }
         return null;
     }
+    public List<SoulEnemySlot> GetAllSoulEnemySlots()
+    {
+        if (soulEnemySlots != null)
+            return soulEnemySlots;
 
+        else return null;
+    }
 
 
     private SoulEnemySlot GetSlotByEnemy(SoulEnemy enemy)

@@ -224,6 +224,8 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
         ClearSoulInfo();
 
         SelectFallbackAfterRemoval();
+
+        GameControlller.Instance.ScoreManager.AddPoints(75);
     }
 
     private void SelectFallbackAfterRemoval()
@@ -239,14 +241,14 @@ public class InventoryView : UiView, IUIPanelWithSelectionStack
 
     private void DestroySoul()
     {
-        var fallback = GetDefaultSelection(); 
+     
         soulsList.Remove(currentSoulInfo);
         soulsList.TrimExcess();
         SetupGridNavigation();
-
+      
         Destroy(currentSelected);
         ClearSoulInfo();
-
+        var fallback = GetDefaultSelection();
         if (fallback != null)
             EventSystem.current.SetSelectedGameObject(fallback);
         else

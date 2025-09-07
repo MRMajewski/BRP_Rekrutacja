@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.XR;
 using UnityEngine.UI;
 
 public class PopUpView : MonoBehaviour
@@ -68,10 +65,6 @@ public class PopUpView : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public Stack<GameObject> GetSelectionStack()
-    {
-        throw new NotImplementedException();
-    }
 }
 
 public struct PopUpInformation
