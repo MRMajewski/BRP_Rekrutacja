@@ -5,45 +5,46 @@ using UnityEngine.UI;
 
 public class SoulEnemy : MonoBehaviour, IEnemy
 {
+
+    #region Variables
+    [Header("Object References")]
     [SerializeField] private GameObject InteractionPanelObject;
     [SerializeField] private GameObject ActionsPanelObject;
     [SerializeField] private SpriteRenderer EnemySpriteRenderer;
 
-    private SpawnPoint _enemyPosition;
-
     [Header("Button References")]
     [SerializeField] private Button combatButton;
-    [Header("Button References")]
     [SerializeField] private Button bowButton;
-    [Header("Button References")]
     [SerializeField] private Button swordButton;
+
+    [Header("Enemy Settings")]
+    [SerializeField] private int basePoints = 100;
+
+
+    private SpawnPoint _enemyPosition;
+    private EnemyWeakness enemyWeakness;
+    private EnemyWeakness killingAttackType;
+    private bool isActionPanelOpen = false;
+    private bool isDead = false;
+
+
+    public bool IsActionPanelOpen => isActionPanelOpen;
+
 
     public Button GetCombatButton() => combatButton;
     public Button GetBowButton() => bowButton;
     public Button GetSwordButton() => swordButton;
 
-    private bool isActionPanelOpen = false;
 
-    public bool IsActionPanelOpen {  get { return isActionPanelOpen; } }
+    public int GetBasePoints() => basePoints;
+    public EnemyWeakness GetWeakness() => enemyWeakness;
+    public SpawnPoint GetEnemyPosition() => _enemyPosition;
+    public GameObject GetEnemyObject() => gameObject;
+    public EnemyWeakness GetKillingAttackType() => killingAttackType;
 
-    private EnemyWeakness enemyWeakness;
-    private EnemyWeakness killingAttackType;
+    #endregion
 
-    [SerializeField] private int basePoints = 100;
-
-    private bool isDead = false;
-
-    public int GetBasePoints()
-    {
-      return basePoints;
-    }
-
-    public EnemyWeakness GetWeakness()
-    {
-         return enemyWeakness;
-    }
- 
-
+    #region Setup
     public void SetupEnemy(Sprite sprite, SpawnPoint spawnPoint, EnemyWeakness weakness)
     {
         EnemySpriteRenderer.sprite = sprite;
@@ -51,105 +52,56 @@ public class SoulEnemy : MonoBehaviour, IEnemy
         enemyWeakness = weakness;
         gameObject.SetActive(true);
     }
+    #endregion
 
-    public SpawnPoint GetEnemyPosition()
+    #region Combat
+    public void Combat_OnClick() => ActiveCombatWithEnemy();
+    public void Bow_OnClick() => UseWeapon(EnemyWeakness.RANGE);
+    public void Sword_OnClick() => UseWeapon(EnemyWeakness.MELEE);
+    private void UseWeapon(EnemyWeakness attackType)
     {
-        return _enemyPosition;
+        if (isDead) return;
+        killingAttackType = attackType;
+        isDead = true;
+        GameEvents.EnemyKilled?.Invoke(this);
     }
-
-    public GameObject GetEnemyObject()
+    public void CancelCombatWithEnemy()
     {
-        return this.gameObject;
+        ActiveInteractionPanel(true);
+        ActiveActionPanel(false);
+        EventSystem.current.SetSelectedGameObject(combatButton.gameObject);
     }
 
     private void ActiveCombatWithEnemy()
     {
         ActiveInteractionPanel(false);
         ActiveActionPanel(true);
-
-
         StartCoroutine(SetSelectedBowNextFrame());
     }
 
     private IEnumerator SetSelectedBowNextFrame()
     {
-        yield return null; 
+        yield return null;
         EventSystem.current.SetSelectedGameObject(bowButton.gameObject);
     }
-    public void CancelCombatWithEnemy()
-    {
-        ActiveInteractionPanel(true);
-        ActiveActionPanel(false);
 
-        EventSystem.current.SetSelectedGameObject(combatButton.gameObject);
-    }
-
-
-    private void ActiveInteractionPanel(bool active)
-    {
-        InteractionPanelObject.SetActive(active);
-    }
-
+    private void ActiveInteractionPanel(bool active) => InteractionPanelObject.SetActive(active);
     private void ActiveActionPanel(bool active)
     {
         isActionPanelOpen = active;
         ActionsPanelObject.SetActive(active);
     }
-
-    private void UseBow()
-    {
-        // USE BOW
-        if (isDead) return; 
-        killingAttackType = EnemyWeakness.RANGE;
-        isDead = true;
-        GameEvents.EnemyKilled?.Invoke(this);
-        return;
-    }
-
-
-    private void UseSword()
-    {
-        if (isDead) return;
-        killingAttackType = EnemyWeakness.MELEE;
-        isDead = true;
-        GameEvents.EnemyKilled?.Invoke(this);
-        // USE SWORD
-        return;
-    }
-
-    #region OnClicks
-    [ContextMenu("click combat")]
-    public void Combat_OnClick()
-    {
-        ActiveCombatWithEnemy();
-    }
-    [ContextMenu("use bow")]
-    public void Bow_OnClick()
-    {
-        UseBow();
-    }
-    [ContextMenu("use sword")]
-    public void Sword_OnClick()
-    {
-        UseSword();
-    }
-
-    public EnemyWeakness GetKillingAttackType()
-    {
-        return killingAttackType;
-    }
-
     #endregion
-}
 
+}
 
 public interface IEnemy
 {
     SpawnPoint GetEnemyPosition();
     GameObject GetEnemyObject();
     int GetBasePoints();
-    EnemyWeakness GetWeakness();  // <-- słabość wroga
-    EnemyWeakness GetKillingAttackType(); // <-- czym został zabity
+    EnemyWeakness GetWeakness();
+    EnemyWeakness GetKillingAttackType();
 }
 
 public enum EnemyWeakness

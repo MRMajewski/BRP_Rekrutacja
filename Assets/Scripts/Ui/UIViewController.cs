@@ -5,16 +5,15 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using static GameplayInputController;
 
-public class UIPanelController : MonoBehaviour
+public class UIViewController : MonoBehaviour
 {
-    private readonly Stack<IUIPanel> panelStack = new Stack<IUIPanel>();
-
-    [Header("Input Actions")]
     [SerializeField] private InputActionReference cancelAction;
-
     [SerializeField] private List<UIPanelData> panelsList;
 
     private Stack<Action> cancelStack = new Stack<Action>();
+    private readonly Stack<IUIView> panelStack = new Stack<IUIView>();
+
+    #region Initialization
     private void OnEnable()
     {
         if (cancelAction != null)
@@ -26,22 +25,24 @@ public class UIPanelController : MonoBehaviour
         if (cancelAction != null)
             cancelAction.action.performed -= OnCancel;
     }
+    #endregion
 
     #region Singleton
-    private static UIPanelController _instance;
+    private static UIViewController _instance;
 
-    public static UIPanelController Instance
+    public static UIViewController Instance
     {
         get
         {
-            if (_instance == null) _instance = FindFirstObjectByType<UIPanelController>();
+            if (_instance == null) _instance = FindFirstObjectByType<UIViewController>();
             return _instance;
         }
         set => _instance = value;
     }
     #endregion
 
-    public void OpenPanel(IUIPanel panel)
+    #region Panel Management
+    public void OpenPanel(IUIView panel)
     {
         if (panel == null) return;
 
@@ -54,7 +55,7 @@ public class UIPanelController : MonoBehaviour
         FocusFirst(panel);
     }
 
-    public void OpenPanelWithoutDeactivatePreviousPanel(IUIPanel panel)
+    public void OpenPanelWithoutDeactivatePreviousPanel(IUIView panel)
     {
 
         panelStack.Push(panel);
@@ -65,13 +66,12 @@ public class UIPanelController : MonoBehaviour
 
     public void OpenPanel(UiView panel)
     {
-        OpenPanel((IUIPanel)panel);
+        OpenPanel((IUIView)panel);
     }
-
 
     public void OpenPanelWithoutDeactivatePreviousPanel(UiView panel)
     {
-        OpenPanelWithoutDeactivatePreviousPanel((IUIPanel)panel);
+        OpenPanelWithoutDeactivatePreviousPanel((IUIView)panel);
     }
 
     public void OpenInventoryPanel()
@@ -87,7 +87,6 @@ public class UIPanelController : MonoBehaviour
         if (panelData != null)
             OpenPanel(panelData.UIPanel);
     }
-
 
     public void CloseCurrentPanel()
     {
@@ -105,10 +104,21 @@ public class UIPanelController : MonoBehaviour
         else
         {
             CloseAllPanels();
-
         }
     }
 
+    private void FocusFirst(IUIView panel)
+    {
+        if (EventSystem.current == null || panel == null) return;
+
+        var first = panel.GetFirstSelected();
+        EventSystem.current.SetSelectedGameObject(null);
+        if (first != null)
+            EventSystem.current.SetSelectedGameObject(first);
+    }
+    #endregion
+
+    #region Cancel Handling
     private void OnCancel(InputAction.CallbackContext _)
     {
 
@@ -117,14 +127,20 @@ public class UIPanelController : MonoBehaviour
 
         var currentPanel = GetCurrentPanel();
 
-        if (currentPanel is IUIPanelWithSelectionStack panelWithStack)
+        if (currentPanel is IUIViewWithSelectionStack panelWithStack)
         {
-            if (panelWithStack.TryHandleCancel())      
-            return;
+            if (panelWithStack.TryHandleCancel())
+                return;
         }
 
         CloseCurrentPanel();
+
+        IUIView GetCurrentPanel()
+        {
+            return panelStack.Count > 0 ? panelStack.Peek() : null;
+        }
     }
+
     public void PushCancelAction(Action action)
     {
         cancelStack.Push(action);
@@ -159,17 +175,7 @@ public class UIPanelController : MonoBehaviour
         GameControlller.Instance.GameplayInput.ReturnFromUI();
     }
 
-    public IUIPanel GetCurrentPanel() => panelStack.Count > 0 ? panelStack.Peek() : null;
-
-    private void FocusFirst(IUIPanel panel)
-    {
-        if (EventSystem.current == null || panel == null) return;
-
-        var first = panel.GetFirstSelected();
-        EventSystem.current.SetSelectedGameObject(null);
-        if (first != null)
-            EventSystem.current.SetSelectedGameObject(first);
-    }
+    #endregion
 }
 
 [Serializable]
@@ -177,6 +183,6 @@ public class UIPanelData
 {
     public string Name;
     [SerializeField] private MonoBehaviour panelObject;
-    public IUIPanel UIPanel => panelObject as IUIPanel;
+    public IUIView UIPanel => panelObject as IUIView;
 }
 

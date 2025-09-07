@@ -16,11 +16,8 @@ public class SoulInformation : MonoBehaviour, ISelectHandler
         if (OnSoulClick != null) SoulButton.onClick.AddListener(() => OnSoulClick());
     }
 
-    // Wywoływane, gdy UI focus ustawi się na tym elemencie
     public void OnSelect(BaseEventData eventData)
     {
-        Debug.Log($"Soul {soulItem.Name} został zaznaczony w UI.");
-
 
         if (scrollFocusController != null)
         {

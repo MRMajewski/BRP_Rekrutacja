@@ -6,10 +6,9 @@ using UnityEngine.UI;
 
 public class GameplayInputController : MonoBehaviour
 {
+    #region Variables
     [SerializeField] private EnemiesController enemiesController;
-
-    private int currentSlotIndex = 0;
-
+   
     private PadControls inputActions;
     public PadControls InputActions { get => inputActions; }
     public enum InputMode { Gameplay, UI }
@@ -17,11 +16,12 @@ public class GameplayInputController : MonoBehaviour
     [SerializeField]
     public InputMode CurrentMode { get; private set; } = InputMode.Gameplay;
 
-    private float navigateCooldown = 0.25f; // czas między zmianami slotów
+    private float navigateCooldown = 0.25f; 
     private float lastNavigateTime = 0f;
+    private int currentSlotIndex = 0;
 
-
-
+    #endregion
+    #region Initialization
     private void Awake()
     {
         inputActions = new PadControls();
@@ -35,7 +35,7 @@ public class GameplayInputController : MonoBehaviour
         inputActions.Gameplay.Inventory.performed += OnInventory;
         inputActions.Gameplay.Cancel.performed += OnCancel;
         inputActions.Gameplay.Confirm.performed += OnConfirm;
-        inputActions.Gameplay.Navigate.performed += OnNavigate; // <- jedna akcja Vector2
+        inputActions.Gameplay.Navigate.performed += OnNavigate;
 
         inputActions.Gameplay.Enable();
     }
@@ -50,6 +50,9 @@ public class GameplayInputController : MonoBehaviour
 
         inputActions.Gameplay.Disable();
     }
+
+    #endregion
+    #region Input Handlers
     private void OnConfirm(InputAction.CallbackContext ctx)
     {
         var selected = EventSystem.current.currentSelectedGameObject;
@@ -60,7 +63,24 @@ public class GameplayInputController : MonoBehaviour
             actionButton.onClick.Invoke();
         }
     }
+    private void OnCancel(InputAction.CallbackContext ctx)
+    {
+        Debug.Log("Cancel pressed");
 
+        var enemies = GetOccupiedEnemies();
+        if (enemies.Count == 0) return;
+
+        SoulEnemy currentEnemy = enemies[currentSlotIndex];
+        if (currentEnemy.IsActionPanelOpen)
+        {
+            currentEnemy.CancelCombatWithEnemy();
+        }
+
+    }
+    private List<SoulEnemy> GetOccupiedEnemies()
+    {
+        return enemiesController.GetActiveEnemies();
+    }
     private void OnPause(InputAction.CallbackContext ctx)
     {
         Debug.Log("Options pressed");
@@ -81,7 +101,6 @@ public class GameplayInputController : MonoBehaviour
     {
         Vector2 dir = ctx.ReadValue<Vector2>();
 
-        // Sprawdzamy cooldown
         if (Time.time - lastNavigateTime < navigateCooldown) return;
 
         if (dir.x > 0.5f)
@@ -95,6 +114,10 @@ public class GameplayInputController : MonoBehaviour
             lastNavigateTime = Time.time;
         }
     }
+
+    #endregion
+
+    #region Enemy Focus & Navigation
     private List<SoulEnemySlot> GetAllSlots()
     {
         return enemiesController.GetAllSoulEnemySlots();
@@ -111,14 +134,12 @@ public class GameplayInputController : MonoBehaviour
         var slots = GetAllSlots();
         if (slots.Count == 0) return;
 
-        // jeśli obecny enemy nie ma otwartego panelu akcji
         if (GetCurrentSlot().enemy != null && !GetCurrentSlot().enemy.IsActionPanelOpen)
         {
             currentSlotIndex = (currentSlotIndex + 1) % slots.Count;
             FocusSlot(slots[currentSlotIndex]);
         }
     }
-
     public void FocusPreviousSlot()
     {
         var slots = GetAllSlots();
@@ -137,25 +158,32 @@ public class GameplayInputController : MonoBehaviour
         if (slot == null || slot.enemy == null) return;
 
         FocusEnemy(slot);
-        //EventSystem.current.SetSelectedGameObject(slot.enemy.GetCombatButton().gameObject);
     }
-    private void OnCancel(InputAction.CallbackContext ctx)
-    {
-        Debug.Log("Cancel pressed");
 
+    public void FocusOnFirstEnemy()
+    {
         var enemies = GetOccupiedEnemies();
         if (enemies.Count == 0) return;
 
-        SoulEnemy currentEnemy = enemies[currentSlotIndex];
-        if (currentEnemy.IsActionPanelOpen)
-        {
-            currentEnemy.CancelCombatWithEnemy();
-        }
-
+        currentSlotIndex = 0;
+        FocusEnemy(GetAllSlots()[currentSlotIndex]);
     }
-    private List<SoulEnemy> GetOccupiedEnemies()
+
+    public void FocusEnemy(SoulEnemySlot slot)
     {
-        return enemiesController.GetActiveEnemies();
+        if (slot == null) return;
+
+        EventSystem.current.SetSelectedGameObject(slot.enemy.GetCombatButton().gameObject);
+        CameraController.Instance.MoveToPosition(slot.cameraPos);
+    }
+
+    public void FocusEnemy(SoulEnemy slot)
+    {
+        if (slot == null) return;
+
+        var enemies = GetOccupiedEnemies();
+
+        EventSystem.current.SetSelectedGameObject(slot.GetCombatButton().gameObject);
     }
     public void SwitchToUIInput()
     {
@@ -188,39 +216,5 @@ public class GameplayInputController : MonoBehaviour
         );
 
     }
-
-    public void FocusOnFirstEnemy()
-    {
-        var enemies = GetOccupiedEnemies();
-        if (enemies.Count == 0) return;
-
-        currentSlotIndex = 0;
-        FocusEnemy(GetAllSlots()[currentSlotIndex]);
-    }
-
-    public void FocusEnemy(SoulEnemySlot slot)
-    {
-        if (slot == null) return;
-
-        //var enemies = GetOccupiedEnemies();
-        //currentSlotIndex = enemies.IndexOf(enemy);
-
-       // GetAllSlots()[currentSlotIndex].cameraPos;
-
-        EventSystem.current.SetSelectedGameObject(slot.enemy.GetCombatButton().gameObject);
-        CameraController.Instance.MoveToPosition(slot.cameraPos);
-    }
-
-    public void FocusEnemy(SoulEnemy slot)
-    {
-        if (slot == null) return;
-
-        var enemies = GetOccupiedEnemies();
-       // currentSlotIndex = enemies.IndexOf(enemy);
-
-        // GetAllSlots()[currentSlotIndex].cameraPos;
-
-        EventSystem.current.SetSelectedGameObject(slot.GetCombatButton().gameObject);
-      //  CameraController.Instance.MoveToPosition(slot.cameraPos);
-    }
+    #endregion
 }

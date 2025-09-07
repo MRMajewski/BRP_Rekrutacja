@@ -37,7 +37,7 @@ public class GameControlller : MonoBehaviour
 
     [SerializeField] private EnemiesController enemiesController;
 
-    [SerializeField] private UIPanelController uiPanelController;
+    [SerializeField] private UIViewController uiPanelController;
 
     [SerializeField] private GameplayInputController gameplayInput;
     [SerializeField] private ScoreManager scoreManager;
@@ -50,7 +50,7 @@ public class GameControlller : MonoBehaviour
     }
 
    public EnemiesController EnemiesController { get => enemiesController; }
-   public UIPanelController UIPanelController { get => uiPanelController; }
+   public UIViewController UIPanelController { get => uiPanelController; }
    public GameplayInputController GameplayInput { get => gameplayInput; }
     public ScoreManager ScoreManager => scoreManager;
     private bool _isPaused;

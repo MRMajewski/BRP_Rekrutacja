@@ -2,115 +2,44 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UiView : MonoBehaviour, IUIPanel
+public class UiView : MonoBehaviour, IUIView
 {
-
-    [Header("UI VIEW elements")] [SerializeField]
-    private bool UnpauseOnClose = false;
-
-    [SerializeField] private bool CloseOnNewView = true;
-    [SerializeField] private Button BackButon;
-
+    #region Variables
+    [Header("UI VIEW Elements")]
     [SerializeField] protected GameObject firstSelected;
+    [SerializeField] private bool UnpauseOnClose = false;
+    [SerializeField] private bool closePanelOnCancel = true;
+    #endregion
 
-    private UiView _parentView;
 
-    protected bool closePanelOnCancel = true;
-
-    public virtual void Awake()
-    {
-        BackButon.onClick.AddListener(() => DisableView_OnClick(this));
-    }
-
-    public void ActiveView_OnClick(UiView viewToActive)
-    {
-        viewToActive.SetParentView(this);
-        viewToActive.ActiveView();
-        this.ActiveView(!CloseOnNewView);
-    }
-
-    private void DisableView_OnClick(UiView viewToDisable)
-    {
-        viewToDisable.DisableView();
-    }
-
-    public void DestroyView_OnClick(UiView viewToDisable)
-    {
-        viewToDisable.DestroyView();
-    }
-
-    public void SetParentView(UiView parentView)
-    {
-        _parentView = parentView;
-    }
-
+    #region View Logic
     public void ActiveView(bool active)
     {
-        this.gameObject.SetActive(active);
-    }
-
-    public void ActiveView(Action onBackButtonAction = null)
-    {
-        if (onBackButtonAction != null) BackButon.onClick.AddListener(() => onBackButtonAction());
-
-        if (!gameObject.activeSelf) 
-            this.ActiveView(true);
+        gameObject.SetActive(active);
     }
 
     public void DisableView()
     {
-        if (_parentView != null)
-        {
-            _parentView.ActiveView();
-        }
-        
-        if (UnpauseOnClose) GameControlller.Instance.IsPaused = false;
+        ActiveView(false);
 
-        this.ActiveView(false);
+        if (UnpauseOnClose)
+            GameControlller.Instance.IsPaused = false;
     }
+    #endregion
 
-    public void DestroyView()
-    {
-        if (_parentView != null)
-        {
-            _parentView.ActiveView();
-        }
-
-        Destroy(this.gameObject);
-    }
-
-    public void DisableBackButton()
-    {
-        BackButon.gameObject.SetActive(false);
-    }
-
-    public Button GetBackButton()
-    {
-        return BackButon;
-    }
-
+    #region IUIView Implementation
     public virtual void OnPanelActivated()
     {
-       ActiveView_OnClick(this);
+        ActiveView(true);
     }
 
     public virtual void OnPanelDeactivated()
     {
-        DisableView_OnClick(this);
+        DisableView();
     }
 
-    public string GetPanelName()
-    {
-        throw new NotImplementedException();
-    }
+    public virtual GameObject GetFirstSelected() => firstSelected;
 
-    public virtual GameObject GetFirstSelected()
-    {
-        return firstSelected;
-    }
-
-    public bool GetCloseOnCancel()
-    {
-        return closePanelOnCancel;
-    }
+    public bool GetCloseOnCancel() => closePanelOnCancel;
+    #endregion
 }

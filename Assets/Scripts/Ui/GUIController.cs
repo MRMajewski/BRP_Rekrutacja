@@ -3,8 +3,15 @@
 public class GUIController : MonoBehaviour
 {
 
-    #region singleton
+    #region Variables
+    [SerializeField] private GameObject DisableOnStartObject;
+    [SerializeField] private RectTransform ViewsParent;
+    [SerializeField] private GameObject InGameGuiObject;
+    [SerializeField] private PopUpView PopUp;
+    [SerializeField] private PopUpScreenBlocker ScreenBlocker;
 
+    #endregion
+    #region singleton
     public static GUIController Instance;
     private PopUpView currentPopUp;
     private void Awake()
@@ -12,15 +19,9 @@ public class GUIController : MonoBehaviour
         DisableOnStartObject.SetActive(false);
         Instance = this;
     }
-
     #endregion
 
-    [SerializeField] private GameObject DisableOnStartObject;
-    [SerializeField] private RectTransform ViewsParent;
-    [SerializeField] private GameObject InGameGuiObject;
-    [SerializeField] private PopUpView PopUp;
-    [SerializeField] private PopUpScreenBlocker ScreenBlocker;
-
+    #region GUI Logic
     private void Start()
     {
         if (ScreenBlocker) ScreenBlocker.InitBlocker();
@@ -31,15 +32,11 @@ public class GUIController : MonoBehaviour
         InGameGuiObject.SetActive(active);
     }
 
-    public void ShowPopUpMessage(PopUpInformation popUpInfo, IUIPanelWithSelectionStack parent = null)
+    public void ShowPopUpMessage(PopUpInformation popUpInfo, IUIViewWithSelectionStack parent = null)
     {
-        //PopUpView newPopUp = Instantiate(PopUp, ViewsParent) as PopUpView;
-        //newPopUp.ActivePopUpView(popUpInfo);
         PopUpView newPopUp = Instantiate(PopUp, ViewsParent);
         newPopUp.parentView = parent;
         newPopUp.ActivePopUpView(popUpInfo);
-        //PopUpView newPopUp = Instantiate(PopUp, ViewsParent);
-        //newPopUp.ActivePopUpView(popUpInfo);
         currentPopUp = newPopUp;
     }
 
@@ -65,15 +62,15 @@ public class GUIController : MonoBehaviour
     {
         if (active) ScreenBlocker.AddPopUpView(popUpView);
         else ScreenBlocker.RemovePopUpView(popUpView);
-    }
+    }    
+    #endregion
 
 
     #region IN GAME GUI Clicks
 
     public void InGameGUIButton_OnClick(UiView viewToActive)
     {
-        viewToActive.ActiveView(() => ActiveInGameGUI(true));
-
+        viewToActive.ActiveView(true);
         ActiveInGameGUI(false);
         GameControlller.Instance.IsPaused = true;
     }

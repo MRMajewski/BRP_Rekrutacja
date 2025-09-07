@@ -1,14 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public interface IUIPanel
+public interface IUIView
 {
 
     void OnPanelActivated();
 
     void OnPanelDeactivated();
-
-    string GetPanelName();
 
     bool GetCloseOnCancel();
 

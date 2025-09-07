@@ -5,13 +5,17 @@ using UnityEngine.UI;
 
 public class PopUpView : MonoBehaviour
 {
+    #region Variables
     [Header("Pop Up Elements")] public Text LabelText;
     public Text MessageText;
     public Button ConfirmButton;
     public Button CancelButton;
 
-    public IUIPanelWithSelectionStack parentView;
+    public IUIViewWithSelectionStack parentView;
 
+    #endregion
+
+    #region Popup Logic
     private void OnEnable()
     {
         GUIController.Instance.ActiveScreenBlocker(true, this);
@@ -50,7 +54,7 @@ public class PopUpView : MonoBehaviour
             ClosePopUp();
         });
 
-        EventSystem.current.SetSelectedGameObject(CancelButton.gameObject);
+        EventSystem.current.SetSelectedGameObject(ConfirmButton.gameObject);
     }
 
     private void ClearPopUp()
@@ -58,13 +62,14 @@ public class PopUpView : MonoBehaviour
         LabelText.text = "";
         MessageText.text = "";
         ConfirmButton.onClick.RemoveAllListeners();
+        CancelButton.onClick.RemoveAllListeners();
     }
 
     private void ClosePopUp()
     {
         Destroy(gameObject);
     }
-
+    #endregion
 }
 
 public struct PopUpInformation

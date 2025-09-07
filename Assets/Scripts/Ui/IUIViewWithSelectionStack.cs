@@ -2,19 +2,16 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public interface IUIPanelWithSelectionStack
+public interface IUIViewWithSelectionStack
 {
     public Stack<SelectionObjectInStack> GetSelectionStack();
 
-    //   public void RegisterCancelForCurrent(GameObject current);
     public void PushToSelectionStack(GameObject target, Action onCancel);
 
     public bool TryHandleCancel();
 
-
     public GameObject GetDefaultSelection();
 }
-
 
 public class SelectionObjectInStack
 {
