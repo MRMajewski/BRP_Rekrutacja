@@ -6,7 +6,7 @@ public class ScoreManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI scoreText;
     private int currentScore = 0;
-
+    private float textPunchValue = 1.25f;
     private void OnEnable()
     {
         GameEvents.EnemyKilled += OnEnemyKilled;
@@ -17,18 +17,27 @@ public class ScoreManager : MonoBehaviour
         GameEvents.EnemyKilled -= OnEnemyKilled;
     }
 
+    public void InitScore()
+    {
+        currentScore = 0;
+        UpdateScoreUI();
+    }
+
     private void OnEnemyKilled(IEnemy enemy)
     {
         int points = enemy.GetBasePoints();
+        textPunchValue = 1.25f;
 
-        // bonus 50%, jeœli trafiony s³aboœci¹
         if (enemy.GetWeakness() == enemy.GetKillingAttackType())
         {
             points = Mathf.RoundToInt(points * 1.5f);
+            textPunchValue = 1.5f;
         }
 
         currentScore += points;
         UpdateScoreUI();
+
+        TweensManager.Instance.PlayPunchEffect(scoreText, textPunchValue);
     }
 
     private void UpdateScoreUI()
